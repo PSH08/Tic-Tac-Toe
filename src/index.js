@@ -40,26 +40,10 @@ function calculateWinner(squares) {
 // Square에 vlaue prop을 전달하기 위해 Board의 renderSquare 함수 코드를 수정해주세요.
 
 class Board extends React.Component {
-  handleClick(i) {
-    const history = this.state.history;
-    const current = history[history.length - 1]
-    const squares = current.squares.slice();
-    if(calculateWinner(squares) || squares[i])  {
-      return;
-    }
-    squares[i] = this.state.xIsNext ? 'X' : 'O';
-    this.setState({
-      // concat() 함수는 기존 배열을 변경하지 않기 때문에 이를 더 권장합니다.
-      history: history.concat([{
-        squares: squares,
-      }]),
-      xIsNext: !this.state.xIsNext
-    })
-  }
   renderSquare(i) {
     return <Square 
       value={this.props.squares[i]} 
-      onClick={() => this.props.handleClick(i)}
+      onClick={() => this.props.onClick(i)}
     />;
   }
 
@@ -94,12 +78,49 @@ class Game extends React.Component {
         squares:Array(9).fill(null),
       }],
       xIsNext: true,
+      stepNumber : 0,
     }
+  }
+  handleClick(i) {
+    const history = this.state.history.slice(0, this.state.stepNumber + 1);
+    const current = history[history.length - 1]
+    const squares = current.squares.slice();
+    if(calculateWinner(squares) || squares[i])  {
+      return;
+    }
+    squares[i] = this.state.xIsNext ? 'X' : 'O';
+    this.setState({
+      // concat() 함수는 기존 배열을 변경하지 않기 때문에 이를 더 권장합니다.
+      history: history.concat([{
+        squares: squares,
+      }]),
+      stepNumber: history.length,
+      xIsNext: !this.state.xIsNext
+    })
+  }
+  jumpTo(step) {
+    this.setState({
+      stepNumber: step,
+      xIsNext: (step % 2) === 0,
+    })
   }
   render() {
     const history = this.state.history;
-    const current = history[history - 1];
+    const current = history[this.state.stepNumber];
     const winner = calculateWinner(current.squares);
+
+    // history 배열을 순회하면서 step 변수는 현재 history 요소의 값을 참조하며 move는 현재 history 요소의 인덱스를 참조합니다.
+    const moves = history.map((step, move) => {
+      const desc = move ? 
+        'Go to move #' + move :
+        'Go to game start';
+      return (
+        <li key={move}>
+          <button onClick={() => this.jumpTo(move)}>{desc}</button>
+        </li>
+      )
+    })
+    
     let status;
     if(winner) {
       status = 'winner: ' + winner
@@ -116,7 +137,7 @@ class Game extends React.Component {
         </div>
         <div className="game-info">
           <div>{status}</div>
-          <ol>{/* TODO */}</ol>
+          <ol>{moves}</ol>
         </div>
       </div>
     );
